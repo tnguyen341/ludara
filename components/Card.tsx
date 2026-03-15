@@ -1,84 +1,128 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { CardType } from "@/types";
 import { RARITY_CONFIG } from "@/data/cards";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface CardProps {
   card: CardType;
   index: number;
   total: number;
-  isRevealed: boolean;
   isFanned: boolean;
-  onReveal: () => void;
+  isPlayed: boolean;
+  onPlay: () => void;
+  onDragStateChange: (isDragging: boolean, aboveThreshold: boolean) => void;
 }
 
-// Fan angle calculation
-function getFanTransform(index: number, total: number): { rotate: number; x: number; y: number } {
-  const spread = Math.min(total * 14, 70);
+// Circular arc fan — mirrors Hearthstone's hand curve
+function getFanTransform(index: number, total: number) {
+  const totalSpreadDeg = Math.min(total * 14, 78);
   const mid = (total - 1) / 2;
   const offset = index - mid;
-  const rotate = offset * (spread / (total - 1));
-  const arcRadius = 200;
-  const y = Math.abs(offset) * (arcRadius / total);
-  const x = offset * 22;
-  return { rotate, x, y };
+  const angleDeg = total > 1 ? offset * (totalSpreadDeg / (total - 1)) : 0;
+  const angleRad = (angleDeg * Math.PI) / 180;
+  const arcRadius = 360;
+  const x = arcRadius * Math.sin(angleRad) * 0.62;
+  const y = arcRadius * (1 - Math.cos(angleRad));
+  return { rotate: angleDeg, x, y };
 }
 
-export default function Card({ card, index, total, isRevealed, isFanned, onReveal }: CardProps) {
-  const [isFlipped, setIsFlipped] = useState(false);
+// How far up (px) you need to drag to trigger play
+const PLAY_THRESHOLD = -60;
+
+export default function Card({
+  card,
+  index,
+  total,
+  isFanned,
+  isPlayed,
+  onPlay,
+  onDragStateChange,
+}: CardProps) {
+  const [flipped, setFlipped] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [aboveThreshold, setAboveThreshold] = useState(false);
   const cfg = RARITY_CONFIG[card.rarity];
   const fan = getFanTransform(index, total);
 
-  const handleClick = () => {
-    if (!isFlipped && isRevealed) {
-      setIsFlipped(true);
+  // Auto-flip face-up as each card slides into its fan position
+  useEffect(() => {
+    if (isFanned && !flipped) {
+      const t = setTimeout(() => setFlipped(true), 500 + index * 140);
+      return () => clearTimeout(t);
+    }
+  }, [isFanned, flipped, index]);
+
+  const getAnimate = () => {
+    if (!isFanned) return { x: 0, y: 50, rotate: 0, opacity: 0, scale: 0.82 };
+    if (isPlayed) return { x: fan.x * 0.3, y: -720, rotate: fan.rotate * 0.15, opacity: 0, scale: 2.1 };
+    return { x: fan.x, y: fan.y, rotate: fan.rotate, opacity: 1, scale: 1 };
+  };
+
+  const getTransition = () => {
+    if (isPlayed) return { duration: 0.48, ease: [0.3, 0, 0.8, 1] as const };
+    return {
+      duration: 0.72,
+      delay: isFanned ? index * 0.1 : 0,
+      ease: [0.16, 1, 0.3, 1] as const,
+    };
+  };
+
+  const handleDragStart = () => {
+    setIsDragging(true);
+    onDragStateChange(true, false);
+  };
+
+  const handleDrag = (_: PointerEvent, info: PanInfo) => {
+    const above = info.offset.y < PLAY_THRESHOLD;
+    if (above !== aboveThreshold) {
+      setAboveThreshold(above);
+      onDragStateChange(true, above);
     }
   };
 
-  // Start position: stacked at center
-  const stackVariant = {
-    x: (Math.random() - 0.5) * 6,
-    y: 0,
-    rotate: (Math.random() - 0.5) * 4,
-    opacity: 0,
-    scale: 0.85,
-  };
-
-  const fanVariant = {
-    x: fan.x,
-    y: fan.y,
-    rotate: fan.rotate,
-    opacity: 1,
-    scale: 1,
+  const handleDragEnd = (_: PointerEvent, info: PanInfo) => {
+    if (info.offset.y < PLAY_THRESHOLD) {
+      onPlay();
+    }
+    setIsDragging(false);
+    setAboveThreshold(false);
+    onDragStateChange(false, false);
   };
 
   return (
     <motion.div
-      className="absolute cursor-pointer"
+      className="absolute select-none"
       style={{
         width: 160,
         height: 224,
         transformOrigin: "bottom center",
         perspective: "1000px",
-        zIndex: isFlipped ? 20 + index : index,
+        zIndex: isPlayed ? 0 : isDragging ? 100 : index + 2,
+        cursor: isDragging ? "grabbing" : "grab",
+        touchAction: "none",
       }}
-      variants={{ stacked: stackVariant, fanned: fanVariant }}
-      initial="stacked"
-      animate={isFanned ? "fanned" : "stacked"}
-      transition={{
-        duration: 0.9,
-        delay: isFanned ? index * 0.08 : 0,
-        ease: [0.16, 1, 0.3, 1],
-      }}
+      initial={{ x: 0, y: 50, rotate: 0, opacity: 0, scale: 0.82 }}
+      animate={getAnimate()}
+      transition={getTransition()}
+      drag={isFanned && !isPlayed}
+      dragSnapToOrigin
+      dragConstraints={{ left: -2000, right: 2000, top: -2000, bottom: 2000 }}
+      dragElastic={1}
+      dragMomentum={false}
+      dragTransition={{ bounceStiffness: 480, bounceDamping: 46 }}
+      onDragStart={handleDragStart}
+      onDrag={handleDrag}
+      onDragEnd={handleDragEnd}
       whileHover={
-        isFanned && !isFlipped
-          ? { y: fan.y - 20, scale: 1.08, zIndex: 50, transition: { duration: 0.2 } }
+        isFanned && !isPlayed && !isDragging
+          ? { y: fan.y - 42, scale: 1.14, zIndex: 50, transition: { duration: 0.18, ease: "easeOut" } }
           : {}
       }
-      onClick={handleClick}
+      whileDrag={{ scale: 1.1, rotate: 0 }}
     >
+      {/* 3D flip container */}
       <motion.div
         style={{
           width: "100%",
@@ -86,10 +130,10 @@ export default function Card({ card, index, total, isRevealed, isFanned, onRevea
           position: "relative",
           transformStyle: "preserve-3d",
         }}
-        animate={{ rotateY: isFlipped ? 180 : 0 }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        animate={{ rotateY: flipped ? 180 : 0 }}
+        transition={{ duration: 0.52, ease: [0.16, 1, 0.3, 1] }}
       >
-        {/* BACK FACE */}
+        {/* ── BACK FACE ── */}
         <div
           style={{
             position: "absolute",
@@ -107,23 +151,8 @@ export default function Card({ card, index, total, isRevealed, isFanned, onRevea
             overflow: "hidden",
           }}
         >
-          {/* Back pattern */}
-          <div
-            style={{
-              position: "absolute",
-              inset: 8,
-              border: "1px solid #c9a84c22",
-              borderRadius: "8px",
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              inset: 14,
-              border: "1px solid #c9a84c11",
-              borderRadius: "6px",
-            }}
-          />
+          <div style={{ position: "absolute", inset: 8, border: "1px solid #c9a84c22", borderRadius: "8px" }} />
+          <div style={{ position: "absolute", inset: 14, border: "1px solid #c9a84c11", borderRadius: "6px" }} />
           <div style={{ fontSize: "3rem", color: "#c9a84c", opacity: 0.6, lineHeight: 1 }}>✦</div>
           <div
             style={{
@@ -138,44 +167,11 @@ export default function Card({ card, index, total, isRevealed, isFanned, onRevea
           >
             Arcana
           </div>
-          {/* Top stripe */}
-          <div
-            style={{
-              position: "absolute",
-              top: 0, left: 0, right: 0, height: "3px",
-              background: "linear-gradient(90deg, transparent, #c9a84c, transparent)",
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              bottom: 0, left: 0, right: 0, height: "3px",
-              background: "linear-gradient(90deg, transparent, #c9a84c, transparent)",
-            }}
-          />
-
-          {/* Tap hint */}
-          {isRevealed && (
-            <motion.div
-              style={{
-                position: "absolute",
-                bottom: 16,
-                fontFamily: "'Crimson Pro', serif",
-                fontSize: "0.65rem",
-                color: "#c9a84c",
-                opacity: 0.6,
-                letterSpacing: "0.15em",
-                textTransform: "uppercase",
-              }}
-              animate={{ opacity: [0.3, 0.7, 0.3] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-              Tap to reveal
-            </motion.div>
-          )}
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: "linear-gradient(90deg, transparent, #c9a84c, transparent)" }} />
+          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "3px", background: "linear-gradient(90deg, transparent, #c9a84c, transparent)" }} />
         </div>
 
-        {/* FRONT FACE */}
+        {/* ── FRONT FACE ── */}
         <div
           style={{
             position: "absolute",
@@ -192,23 +188,9 @@ export default function Card({ card, index, total, isRevealed, isFanned, onRevea
             overflow: "hidden",
           }}
         >
-          {/* Top color bar */}
-          <div
-            style={{
-              height: "4px",
-              background: `linear-gradient(90deg, transparent, ${cfg.color}, transparent)`,
-            }}
-          />
+          <div style={{ height: "4px", background: `linear-gradient(90deg, transparent, ${cfg.color}, transparent)` }} />
 
-          {/* Rarity badge */}
-          <div
-            style={{
-              margin: "8px 8px 0",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
+          <div style={{ margin: "8px 8px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span
               style={{
                 fontFamily: "'Cinzel', serif",
@@ -224,7 +206,6 @@ export default function Card({ card, index, total, isRevealed, isFanned, onRevea
             <span style={{ fontSize: "0.9rem", color: cfg.color, opacity: 0.8 }}>{card.symbol}</span>
           </div>
 
-          {/* Art area */}
           <div
             style={{
               flex: "0 0 80px",
@@ -250,12 +231,9 @@ export default function Card({ card, index, total, isRevealed, isFanned, onRevea
                 transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
               />
             )}
-            <span style={{ fontSize: "2.2rem", lineHeight: 1, position: "relative", zIndex: 1 }}>
-              {card.symbol}
-            </span>
+            <span style={{ fontSize: "2.2rem", lineHeight: 1, position: "relative", zIndex: 1 }}>{card.symbol}</span>
           </div>
 
-          {/* Card name */}
           <div
             style={{
               padding: "0 10px 4px",
@@ -272,16 +250,8 @@ export default function Card({ card, index, total, isRevealed, isFanned, onRevea
             {card.name}
           </div>
 
-          {/* Divider */}
-          <div
-            style={{
-              height: "1px",
-              margin: "4px 12px",
-              background: `linear-gradient(90deg, transparent, ${cfg.border}88, transparent)`,
-            }}
-          />
+          <div style={{ height: "1px", margin: "4px 12px", background: `linear-gradient(90deg, transparent, ${cfg.border}88, transparent)` }} />
 
-          {/* Element & Power */}
           <div
             style={{
               display: "flex",
@@ -297,7 +267,6 @@ export default function Card({ card, index, total, isRevealed, isFanned, onRevea
             <span>PWR {card.power}</span>
           </div>
 
-          {/* Description */}
           <div
             style={{
               flex: 1,
@@ -314,15 +283,8 @@ export default function Card({ card, index, total, isRevealed, isFanned, onRevea
             {card.description}
           </div>
 
-          {/* Bottom bar */}
-          <div
-            style={{
-              height: "4px",
-              background: `linear-gradient(90deg, transparent, ${cfg.color}, transparent)`,
-            }}
-          />
+          <div style={{ height: "4px", background: `linear-gradient(90deg, transparent, ${cfg.color}, transparent)` }} />
 
-          {/* Shine */}
           <div
             style={{
               position: "absolute",
@@ -333,6 +295,45 @@ export default function Card({ card, index, total, isRevealed, isFanned, onRevea
           />
         </div>
       </motion.div>
+
+      {/* Drag-above-threshold glow ring */}
+      <AnimatePresence>
+        {aboveThreshold && (
+          <motion.div
+            style={{
+              position: "absolute",
+              inset: -8,
+              borderRadius: 18,
+              border: `2px solid ${cfg.color}`,
+              boxShadow: `0 0 30px ${cfg.glow}, 0 0 70px ${cfg.glow}66`,
+              pointerEvents: "none",
+            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0.7, 1, 0.7] }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.45, repeat: Infinity }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Burst flash on play */}
+      <AnimatePresence>
+        {isPlayed && (
+          <motion.div
+            style={{
+              position: "absolute",
+              inset: -28,
+              borderRadius: 28,
+              background: `radial-gradient(circle, ${cfg.color}cc 0%, ${cfg.color}44 40%, transparent 70%)`,
+              pointerEvents: "none",
+              zIndex: 150,
+            }}
+            initial={{ opacity: 1, scale: 0.3 }}
+            animate={{ opacity: 0, scale: 3.5 }}
+            transition={{ duration: 0.6, ease: [0, 0.5, 0.8, 1] }}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
