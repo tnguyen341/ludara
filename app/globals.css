@@ -5,12 +5,24 @@
 @tailwind utilities;
 
 :root {
-  --gold: #c9a84c;
-  --gold-light: #f0d080;
-  --gold-dark: #8a6a1a;
-  --obsidian: #0a0a0f;
-  --deep-navy: #080c1a;
-  --card-shadow: 0 25px 60px rgba(0,0,0,0.8);
+  /* Candlelight gold accents */
+  --gold: #c9902a;
+  --gold-light: #f0c84a;
+  --gold-dim:  #a07018;
+  --gold-dark: #6a4410;
+
+  /* Warm dark backgrounds */
+  --obsidian: #160c02;
+  --deep-brown: #0e0701;
+  --mid-brown: #2a1608;
+  --leather: #3d2008;
+
+  /* Parchment surfaces */
+  --parchment: #f0e0c0;
+  --parchment-dark: #d4b888;
+  --parchment-ink: #3d2808;
+
+  --card-shadow: 0 25px 60px rgba(0,0,0,0.85);
 }
 
 * {
@@ -21,7 +33,7 @@
 
 html, body {
   background: var(--obsidian);
-  color: #e8dcc8;
+  color: #e0c898;
   font-family: 'Crimson Pro', serif;
   overflow-x: hidden;
   min-height: 100vh;
@@ -50,7 +62,7 @@ canvas.particles {
 
 /* Glowing text */
 .glow-gold {
-  text-shadow: 0 0 20px rgba(201,168,76,0.6), 0 0 60px rgba(201,168,76,0.2);
+  text-shadow: 0 0 20px rgba(201,144,42,0.7), 0 0 60px rgba(180,110,20,0.3);
 }
 
 /* Card shine effect */
@@ -68,7 +80,7 @@ canvas.particles {
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #0a0a0f; }
+::-webkit-scrollbar-track { background: #0e0701; }
 ::-webkit-scrollbar-thumb { background: var(--gold-dark); border-radius: 3px; }
 
 @keyframes shimmer {
@@ -77,7 +89,7 @@ canvas.particles {
 }
 
 .shimmer-text {
-  background: linear-gradient(90deg, #c9a84c, #f0d080, #c9a84c, #8a6a1a, #c9a84c);
+  background: linear-gradient(90deg, #c9902a, #f0c84a, #c9902a, #6a4410, #c9902a);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -96,8 +108,8 @@ canvas.particles {
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(201,168,76,0.3); }
-  50% { box-shadow: 0 0 40px rgba(201,168,76,0.7), 0 0 80px rgba(201,168,76,0.2); }
+  0%, 100% { box-shadow: 0 0 20px rgba(201,144,42,0.35); }
+  50% { box-shadow: 0 0 40px rgba(201,144,42,0.75), 0 0 80px rgba(180,110,20,0.25); }
 }
 
 .pulse-glow {

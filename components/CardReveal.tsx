@@ -3,6 +3,18 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { CardType, Pack } from "@/types";
+
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    setIsDesktop(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return isDesktop;
+}
 import Card from "./Card";
 import { RARITY_CONFIG } from "@/data/cards";
 
@@ -17,6 +29,7 @@ export default function CardReveal({ cards, pack, onReset }: CardRevealProps) {
   const [playedIds, setPlayedIds] = useState<Set<string>>(new Set());
   const [anyDragging, setAnyDragging] = useState(false);
   const [dropZoneReady, setDropZoneReady] = useState(false);
+  const isDesktop = useIsDesktop();
 
   useEffect(() => {
     const t = setTimeout(() => setFanned(true), 300);
@@ -37,9 +50,9 @@ export default function CardReveal({ cards, pack, onReset }: CardRevealProps) {
   return (
     <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6">
 
-      {/* ── Drop Zone ── */}
+      {/* ── Drop Zone — desktop only ── */}
       <AnimatePresence>
-        {anyDragging && (
+        {isDesktop && anyDragging && (
           <motion.div
             style={{
               position: "absolute",
@@ -108,13 +121,13 @@ export default function CardReveal({ cards, pack, onReset }: CardRevealProps) {
         </h2>
       </motion.div>
 
-      {/* Fan container */}
+      {/* Fan / stack container */}
       <div
         style={{
           position: "relative",
           width: "100%",
-          maxWidth: 580,
-          height: 380,
+          maxWidth: isDesktop ? 580 : 220,
+          height: isDesktop ? 380 : 300,
           display: "flex",
           alignItems: "flex-end",
           justifyContent: "center",
@@ -154,7 +167,7 @@ export default function CardReveal({ cards, pack, onReset }: CardRevealProps) {
             exit={{ opacity: 0 }}
             transition={{ delay: 1.8 }}
           >
-            Drag a card upward to play it
+            {isDesktop ? "Drag a card upward to play it" : "Swipe up to play"}
           </motion.p>
         )}
       </AnimatePresence>

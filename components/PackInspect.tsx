@@ -13,9 +13,9 @@ interface PackInspectProps {
 
 export default function PackInspect({ pack, onOpen, onBack, phase }: PackInspectProps) {
   const [particles, setParticles] = useState<{ id: number; x: number; y: number; angle: number }[]>([]);
+  const [shaking, setShaking] = useState(false);
 
   const handleOpen = () => {
-    // Spawn burst particles
     const burst = Array.from({ length: 20 }, (_, i) => ({
       id: i,
       x: 50,
@@ -24,6 +24,15 @@ export default function PackInspect({ pack, onOpen, onBack, phase }: PackInspect
     }));
     setParticles(burst);
     onOpen();
+  };
+
+  const handleButtonClick = () => {
+    if (shaking) return;
+    setShaking(true);
+    setTimeout(() => {
+      setShaking(false);
+      handleOpen();
+    }, 580);
   };
 
   return (
@@ -52,11 +61,16 @@ export default function PackInspect({ pack, onOpen, onBack, phase }: PackInspect
             {/* Pack visual */}
             <motion.div
               className="relative mb-12"
-              animate={{
-                y: [0, -12, 0],
-                rotate: [0, 1, -1, 0],
-              }}
-              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+              animate={
+                shaking
+                  ? { x: [-10, 10, -14, 14, -10, 10, -5, 5, 0], scale: [1, 1.04, 1.02, 1.05, 1] }
+                  : { y: [0, -12, 0], rotate: [0, 1, -1, 0] }
+              }
+              transition={
+                shaking
+                  ? { duration: 0.55, ease: "easeInOut" }
+                  : { duration: 5, repeat: Infinity, ease: "easeInOut" }
+              }
             >
               <PackVisual pack={pack} size="large" />
             </motion.div>
@@ -91,39 +105,51 @@ export default function PackInspect({ pack, onOpen, onBack, phase }: PackInspect
               </p>
             </motion.div>
 
-            {/* Open button */}
+            {/* Open button — candlelight pulse */}
             <motion.button
               className="relative px-14 py-4 rounded-full font-serif text-lg tracking-widest uppercase overflow-hidden"
               style={{
-                background: `linear-gradient(135deg, ${pack.accentColor}33, ${pack.accentColor}11)`,
-                border: `2px solid ${pack.accentColor}`,
-                color: pack.accentColor,
-                boxShadow: `0 0 30px ${pack.glowColor}`,
+                background: "linear-gradient(135deg, rgba(180,110,20,0.35) 0%, rgba(120,70,10,0.18) 100%)",
+                border: "2px solid #c9902a",
+                color: "#f0c84a",
+                letterSpacing: "0.25em",
               }}
               whileHover={{
-                scale: 1.05,
-                boxShadow: `0 0 60px ${pack.glowColor}, 0 0 100px ${pack.glowColor}`,
+                scale: 1.07,
+                boxShadow: "0 0 50px rgba(240,160,40,0.9), 0 0 100px rgba(200,120,20,0.55), 0 0 160px rgba(160,90,10,0.25)",
               }}
-              whileTap={{ scale: 0.96 }}
-              onClick={handleOpen}
+              whileTap={{ scale: 0.94 }}
+              onClick={handleButtonClick}
               animate={{
                 boxShadow: [
-                  `0 0 20px ${pack.glowColor}`,
-                  `0 0 50px ${pack.glowColor}`,
-                  `0 0 20px ${pack.glowColor}`,
+                  "0 0 18px rgba(200,130,30,0.55), 0 0 40px rgba(180,100,20,0.25)",
+                  "0 0 38px rgba(245,165,50,0.9), 0 0 85px rgba(210,130,25,0.5), 0 0 130px rgba(160,90,10,0.2)",
+                  "0 0 24px rgba(200,130,30,0.6), 0 0 52px rgba(180,100,20,0.28)",
+                  "0 0 44px rgba(250,175,55,0.95), 0 0 95px rgba(215,140,30,0.55)",
+                  "0 0 18px rgba(200,130,30,0.55), 0 0 40px rgba(180,100,20,0.25)",
                 ],
               }}
-              transition={{ duration: 2, repeat: Infinity }}
+              transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", times: [0, 0.25, 0.5, 0.75, 1] }}
             >
-              <span className="relative z-10">Open Pack</span>
+              <span className="relative z-10" style={{ textShadow: "0 0 12px rgba(255,200,80,0.7)" }}>
+                Open Pack
+              </span>
+              {/* Candlelight shimmer sweep */}
               <motion.div
                 className="absolute inset-0"
                 style={{
-                  background: `linear-gradient(105deg, transparent 30%, ${pack.accentColor}22 50%, transparent 70%)`,
+                  background: "linear-gradient(105deg, transparent 25%, rgba(255,200,80,0.18) 50%, transparent 75%)",
                 }}
-                animate={{ x: ["-100%", "100%"] }}
-                transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+                animate={{ x: ["-120%", "120%"] }}
+                transition={{ duration: 2.4, repeat: Infinity, repeatDelay: 0.8, ease: "easeInOut" }}
               />
+              {/* Inner warm fill on hover */}
+              <div style={{
+                position: "absolute",
+                inset: 0,
+                background: "radial-gradient(ellipse at 50% 120%, rgba(200,120,20,0.2) 0%, transparent 65%)",
+                pointerEvents: "none",
+              }} />
             </motion.button>
           </motion.div>
         )}
