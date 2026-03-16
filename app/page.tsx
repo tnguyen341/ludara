@@ -47,7 +47,7 @@ export default function Home() {
     <main
       style={{
         minHeight: "100vh",
-        background: "radial-gradient(ellipse at 50% 0%, #0f0f1a 0%, #050508 100%)",
+        background: "radial-gradient(ellipse at 50% 0%, #261408 0%, #0e0701 100%)",
         position: "relative",
         overflow: "hidden",
       }}

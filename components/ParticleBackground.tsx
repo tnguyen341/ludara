@@ -13,12 +13,13 @@ interface Particle {
   color: string;
 }
 
-const COLORS = ["#c9a84c", "#7c3aed", "#0891b2", "#dc2626", "#ffffff"];
+const COLORS = ["#c9902a", "#d4a840", "#f0c84a", "#a07018", "#e8d0a0"];
 
 export default function ParticleBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
+    if (window.innerWidth < 768) return; // skip on mobile — too costly
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
