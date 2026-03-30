@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import { CardType, Pack } from "@/types";
 import Card from "./Card";
 import { CardFace } from "./Card";
-import { RARITY_CONFIG } from "@/data/cards";
+import { RARITY_CONFIG } from "@/data/rarityConfig";
 
 // ── SSR-safe desktop hook ─────────────────────────────────────────────────────
 function useIsDesktop() {
@@ -76,7 +76,7 @@ function PlayedSummary({ cards, playedIds }: { cards: CardType[]; playedIds: Set
       </p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center" }}>
         {played.map((card) => {
-          const cfg = RARITY_CONFIG[card.rarity];
+          const cfg = RARITY_CONFIG[card.rarity ?? "common"];
           return (
             <div
               key={card.id}

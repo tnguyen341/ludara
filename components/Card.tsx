@@ -8,7 +8,7 @@ import {
   animate as fmAnimate,
 } from "framer-motion";
 import { CardType } from "@/types";
-import { RARITY_CONFIG } from "@/data/cards";
+import { RARITY_CONFIG } from "@/data/rarityConfig";
 import { useEffect, useState } from "react";
 
 interface CardProps {
@@ -50,7 +50,7 @@ export function CardFace({
   height?: number;
   flipDuration?: number;
 }) {
-  const cfg = RARITY_CONFIG[card.rarity];
+  const cfg = RARITY_CONFIG[card.rarity ?? "common"];
   return (
     <motion.div
       style={{
@@ -163,7 +163,7 @@ export default function Card({
   const [isBursting, setIsBursting] = useState(false);
   const [willChange, setWillChange] = useState<"auto" | "transform">("auto");
 
-  const cfg = RARITY_CONFIG[card.rarity];
+  const cfg = RARITY_CONFIG[card.rarity ?? "common"];
   const fan = getFanTransform(index, total);
 
   const mx = useMotionValue(0);
