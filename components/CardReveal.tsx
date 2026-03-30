@@ -114,10 +114,12 @@ function MobileCarousel({
   cards,
   pack,
   onReset,
+  onCommit,
 }: {
   cards: CardType[];
   pack: Pack;
-  onReset: () => void;
+  onReset?: () => void;
+  onCommit?: (winnerId: string) => void;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [flippedIds, setFlippedIds] = useState<Set<string>>(new Set());
@@ -210,6 +212,7 @@ function MobileCarousel({
 
       const playedId = cards[activeIndex].id;
       setTimeout(() => {
+        onCommit?.(playedId);
         setPlayedIds((prev) => {
           const next = new Set(Array.from(prev).concat(playedId));
           const nextIdx = findNextUnplayed(activeIndex, cards, next);
@@ -471,30 +474,32 @@ function MobileCarousel({
       <PlayedSummary cards={cards} playedIds={playedIds} />
 
       {/* Open Another */}
-      <motion.button
-        style={{
-          marginTop: 16,
-          marginBottom: 40,
-          padding: "10px 32px",
-          borderRadius: 24,
-          background: "transparent",
-          border: `2px solid ${pack.accentColor}55`,
-          color: pack.accentColor,
-          fontFamily: "'Cinzel', serif",
-          fontSize: "0.65rem",
-          letterSpacing: "0.2em",
-          textTransform: "uppercase",
-          cursor: "pointer",
-        }}
-        whileHover={{ opacity: 1 }}
-        whileTap={{ scale: 0.96 }}
-        onClick={onReset}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 0.7 }}
-        transition={{ delay: 1.0 }}
-      >
-        Open Another
-      </motion.button>
+      {onReset && (
+        <motion.button
+          style={{
+            marginTop: 16,
+            marginBottom: 40,
+            padding: "10px 32px",
+            borderRadius: 24,
+            background: "transparent",
+            border: `2px solid ${pack.accentColor}55`,
+            color: pack.accentColor,
+            fontFamily: "'Cinzel', serif",
+            fontSize: "0.65rem",
+            letterSpacing: "0.2em",
+            textTransform: "uppercase",
+            cursor: "pointer",
+          }}
+          whileHover={{ opacity: 1 }}
+          whileTap={{ scale: 0.96 }}
+          onClick={onReset}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.7 }}
+          transition={{ delay: 1.0 }}
+        >
+          Open Another
+        </motion.button>
+      )}
     </div>
   );
 }
@@ -504,10 +509,12 @@ function DesktopFan({
   cards,
   pack,
   onReset,
+  onCommit,
 }: {
   cards: CardType[];
   pack: Pack;
-  onReset: () => void;
+  onReset?: () => void;
+  onCommit?: (winnerId: string) => void;
 }) {
   const [fanned, setFanned] = useState(false);
   const [playedIds, setPlayedIds] = useState<Set<string>>(new Set());
@@ -520,6 +527,7 @@ function DesktopFan({
   }, []);
 
   const handlePlay = (cardId: string) => {
+    onCommit?.(cardId);
     setPlayedIds((prev) => new Set(Array.from(prev).concat(cardId)));
   };
 
@@ -658,27 +666,29 @@ function DesktopFan({
       </div>
 
       {/* Open Another */}
-      <motion.div
-        className="mt-10"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1.6 }}
-      >
-        <motion.button
-          className="px-10 py-3 rounded-full font-serif text-sm tracking-widest uppercase"
-          style={{
-            background: "transparent",
-            border: `2px solid ${pack.accentColor}55`,
-            color: pack.accentColor,
-            opacity: 0.7,
-          }}
-          whileHover={{ opacity: 1, borderColor: pack.accentColor }}
-          whileTap={{ scale: 0.96 }}
-          onClick={onReset}
+      {onReset && (
+        <motion.div
+          className="mt-10"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.6 }}
         >
-          Open Another
-        </motion.button>
-      </motion.div>
+          <motion.button
+            className="px-10 py-3 rounded-full font-serif text-sm tracking-widest uppercase"
+            style={{
+              background: "transparent",
+              border: `2px solid ${pack.accentColor}55`,
+              color: pack.accentColor,
+              opacity: 0.7,
+            }}
+            whileHover={{ opacity: 1, borderColor: pack.accentColor }}
+            whileTap={{ scale: 0.96 }}
+            onClick={onReset}
+          >
+            Open Another
+          </motion.button>
+        </motion.div>
+      )}
     </div>
   );
 }
@@ -687,15 +697,16 @@ function DesktopFan({
 interface CardRevealProps {
   cards: CardType[];
   pack: Pack;
-  onReset: () => void;
+  onReset?: () => void;
+  onCommit?: (winnerId: string) => void;
 }
 
-export default function CardReveal({ cards, pack, onReset }: CardRevealProps) {
+export default function CardReveal({ cards, pack, onReset, onCommit }: CardRevealProps) {
   const isDesktop = useIsDesktop();
 
   return isDesktop ? (
-    <DesktopFan cards={cards} pack={pack} onReset={onReset} />
+    <DesktopFan cards={cards} pack={pack} onReset={onReset} onCommit={onCommit} />
   ) : (
-    <MobileCarousel cards={cards} pack={pack} onReset={onReset} />
+    <MobileCarousel cards={cards} pack={pack} onReset={onReset} onCommit={onCommit} />
   );
 }

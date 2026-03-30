@@ -1,4 +1,16 @@
-import type { CardType } from "@/types";
+import type { CardType, Pack } from "@/types";
+
+export const LUDARA_PACK: Pack = {
+  id: "ludara",
+  name: "Ludara",
+  description: "A hand of ideas worth debating.",
+  cardCount: 3,
+  theme: "ideas",
+  accentColor: "#c9a84c",
+  glowColor: "rgba(201,168,76,0.5)",
+  symbol: "✦",
+  gradient: "linear-gradient(135deg, #1a0d04 0%, #0e0701 100%)",
+};
 
 export const IDEAS: CardType[] = [
   // ── Technology ────────────────────────────────────────────────────────────

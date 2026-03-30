@@ -8,9 +8,9 @@ import {
   animate as fmAnimate,
 } from "framer-motion";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { CardType } from "@/types";
 import { useSessionStore } from "@/store/sessionStore";
-import { IDEAS } from "@/data/cards";
 
 // ── Category theming ──────────────────────────────────────────────────────────
 
@@ -22,8 +22,6 @@ const CATEGORY_COLOR: Record<string, string> = {
   Design:     "#f43f5e",
   Economics:  "#06b6d4",
 };
-
-// IDEAS imported for AllDoneScreen leaderboard filtering
 
 // ── IdeaCardFace ──────────────────────────────────────────────────────────────
 // Pure display — renders an Idea with category-keyed accent colors.
@@ -275,183 +273,36 @@ function MatchupCard({
   );
 }
 
-// ── AllDoneScreen ─────────────────────────────────────────────────────────────
-
-function AllDoneScreen({
-  scores,
-  onReset,
-}: {
-  scores: Record<string, number>;
-  onReset: () => void;
-}) {
-  const topIdeas = IDEAS.filter((i) => scores[i.id] !== undefined)
-    .sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0))
-    .slice(0, 5);
-
-  return (
-    <motion.div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: "100vh",
-        padding: "40px 24px",
-        textAlign: "center",
-      }}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      <h2
-        style={{
-          fontFamily: "'Cinzel Decorative', cursive",
-          fontSize: "1.5rem",
-          fontWeight: 900,
-          color: "#c9a84c",
-          textShadow: "0 0 30px rgba(201,168,76,0.6)",
-          marginBottom: 6,
-        }}
-      >
-        All Matchups Complete
-      </h2>
-      <p
-        style={{
-          fontFamily: "'Crimson Pro', serif",
-          fontSize: "0.85rem",
-          color: "#c8b88a",
-          opacity: 0.65,
-          marginBottom: 32,
-        }}
-      >
-        You've ranked every pair of ideas.
-      </p>
-
-      {topIdeas.length > 0 && (
-        <div style={{ width: "100%", maxWidth: 340, marginBottom: 36 }}>
-          <p
-            style={{
-              fontFamily: "'Cinzel', serif",
-              fontSize: "0.45rem",
-              letterSpacing: "0.3em",
-              textTransform: "uppercase",
-              color: "#c9a84c",
-              opacity: 0.5,
-              marginBottom: 12,
-            }}
-          >
-            Top Ideas
-          </p>
-          {topIdeas.map((idea, i) => {
-            const color = CATEGORY_COLOR[idea.category] ?? "#c9a84c";
-            return (
-              <motion.div
-                key={idea.id}
-                initial={{ opacity: 0, x: -12 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.07 }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: "7px 14px",
-                  marginBottom: 5,
-                  borderRadius: 10,
-                  background: `${color}0d`,
-                  border: `1px solid ${color}2a`,
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: "'Cinzel', serif",
-                    fontSize: "0.6rem",
-                    color,
-                    opacity: 0.85,
-                    minWidth: 22,
-                    textAlign: "right",
-                  }}
-                >
-                  {scores[idea.id]}×
-                </span>
-                <span
-                  style={{
-                    fontFamily: "'Cinzel', serif",
-                    fontSize: "0.58rem",
-                    color: "#f0e0c0",
-                    flex: 1,
-                    textAlign: "left",
-                  }}
-                >
-                  {idea.name}
-                </span>
-                <span
-                  style={{
-                    fontFamily: "'Crimson Pro', serif",
-                    fontSize: "0.52rem",
-                    color,
-                    opacity: 0.65,
-                  }}
-                >
-                  {idea.category}
-                </span>
-              </motion.div>
-            );
-          })}
-        </div>
-      )}
-
-      <motion.button
-        style={{
-          padding: "10px 32px",
-          borderRadius: 24,
-          background: "transparent",
-          border: "2px solid #c9a84c55",
-          color: "#c9a84c",
-          fontFamily: "'Cinzel', serif",
-          fontSize: "0.62rem",
-          letterSpacing: "0.2em",
-          textTransform: "uppercase",
-          cursor: "pointer",
-        }}
-        whileHover={{ borderColor: "#c9a84c", opacity: 1 }}
-        whileTap={{ scale: 0.96 }}
-        onClick={onReset}
-      >
-        Start Over
-      </motion.button>
-    </motion.div>
-  );
-}
-
 // ── MatchupView ───────────────────────────────────────────────────────────────
 
 export default function MatchupView({ onBack }: { onBack?: () => void }) {
-  const { currentHand, hasPlayed, scores, initSession, commitCard, resetSession } =
-    useSessionStore();
+  const router = useRouter();
+  const { currentHand, hasPlayed, initSession, commitCard } = useSessionStore();
 
-  // On first mount, draw a hand if none exists yet
+  // Watch hasPlayed so the redirect fires even if Zustand hydrates after mount
   useEffect(() => {
-    if (currentHand === null && !hasPlayed) {
+    if (hasPlayed) {
+      router.replace("/leaderboard");
+      return;
+    }
+    // Draw a hand if the store hasn't done so yet
+    if (currentHand === null) {
       initSession();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [hasPlayed]);
 
   // Animation state — not business state, intentionally local
   const [committedId, setCommittedId] = useState<string | null>(null);
 
-  // Called by MatchupCard after its fly-up animation fires (~420ms)
+  // Called by MatchupCard after its fly-up animation completes (~420ms)
   const handleCommit = (winnerId: string) => {
     setCommittedId(winnerId);
     setTimeout(() => {
       commitCard(winnerId);
-      setCommittedId(null);
+      router.push("/leaderboard");
     }, 480);
   };
-
-  if (hasPlayed) {
-    return <AllDoneScreen scores={scores} onReset={resetSession} />;
-  }
 
   if (!currentHand) {
     return (
@@ -477,8 +328,6 @@ export default function MatchupView({ onBack }: { onBack?: () => void }) {
       </div>
     );
   }
-
-  const [ideaA, ideaB] = currentHand;
 
   return (
     <div
@@ -546,45 +395,44 @@ export default function MatchupView({ onBack }: { onBack?: () => void }) {
         </h2>
       </motion.div>
 
-      {/* Card pair — keyed on the pair so AnimatePresence handles transitions */}
+      {/* All 3 cards from the hand */}
       <AnimatePresence mode="wait">
         <motion.div
-          key={`${ideaA.id}--${ideaB.id}`}
+          key={currentHand.map((c) => c.id).join("--")}
           style={{ display: "flex", gap: 16, alignItems: "flex-start" }}
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.28 }}
         >
-          <MatchupCard
-            idea={ideaA}
-            onCommit={() => handleCommit(ideaA.id)}
-            losingTo={committedId}
-          />
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 28,
-              paddingTop: 88,
-              fontFamily: "'Cinzel', serif",
-              fontSize: "0.62rem",
-              color: "#c9a84c",
-              opacity: 0.28,
-              letterSpacing: "0.08em",
-              flexShrink: 0,
-            }}
-          >
-            vs
-          </div>
-
-          <MatchupCard
-            idea={ideaB}
-            onCommit={() => handleCommit(ideaB.id)}
-            losingTo={committedId}
-          />
+          {currentHand.map((idea, idx) => (
+            <div key={idea.id} style={{ display: "contents" }}>
+              {idx > 0 && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 28,
+                    paddingTop: 88,
+                    fontFamily: "'Cinzel', serif",
+                    fontSize: "0.62rem",
+                    color: "#c9a84c",
+                    opacity: 0.28,
+                    letterSpacing: "0.08em",
+                    flexShrink: 0,
+                  }}
+                >
+                  vs
+                </div>
+              )}
+              <MatchupCard
+                idea={idea}
+                onCommit={() => handleCommit(idea.id)}
+                losingTo={committedId}
+              />
+            </div>
+          ))}
         </motion.div>
       </AnimatePresence>
 
