@@ -1,70 +1,46 @@
-# Arcana Pack Opener
+# Ludara
 
-A mystical card pack opening experience built with **Next.js 14**, **TypeScript**, **Framer Motion**, and **Tailwind CSS**. Deploy instantly to Vercel.
+A gamified idea board built around a single, deliberate interaction — committing to one
+idea over others.
 
-## ✨ Features
+## What is it?
 
-- **4 unique card packs** — Void Ascendant, Inferno Rites, Arcane Codex, Abyssal Tides
-- **5 rarity tiers** — Common, Uncommon, Rare, Epic, Legendary (with weighted probability)
-- **Animated pack selection** with glow effects and floating animations
-- **Pack opening animation** — burst/scale on open
-- **Card fan-out** with Framer Motion spring physics
-- **Individual card flip** — tap each card or "Reveal All"
-- **Particle background** canvas with ambient floating particles
-- **Shimmer/glow** effects per rarity tier
+Ludara presents you with a hand of ideas and asks a simple question: *which is most
+interesting?* You commit to one. Over time, a ranked leaderboard emerges from the
+collective weight of those decisions.
 
-## 🚀 Deploy to Vercel
+The core insight is that forced commitment surfaces genuine preference more accurately
+than passive browsing or upvoting. Scrolling is easy. Choosing is honest.
 
-### Option A — GitHub (Recommended)
+## Why I built it
 
-1. Push this project to a GitHub repo
-2. Go to [vercel.com](https://vercel.com) → **New Project**
-3. Import your repo — Vercel auto-detects Next.js
-4. Click **Deploy** — done!
+Most idea discovery tools optimize for volume — more content, more votes, more noise.
+Ludara takes the opposite position. One pack. One commit. One signal added to the
+board.
 
-### Option B — Vercel CLI
+The mechanic is inspired by max-diff scaling in survey methodology, where asking people
+to choose between options rather than rate them independently produces more reliable
+preference data. Ludara applies that principle to everyday idea exploration.
 
-```bash
-npm install -g vercel
-cd card-pack-opener
-npm install
-vercel
-```
+Plus, I LOVE card games. Could you tell?
 
-## 🛠 Local Development
+## The experience
 
-```bash
-npm install
-npm run dev
-```
+1. Land on a single unopened pack
+2. Click to reveal a hand of three ideas via a card animation sequence
+3. Read them. One will pull at you more than the others.
+4. Commit it — drag it up and release
+5. See where it lands on the leaderboard
 
-Open [http://localhost:3000](http://localhost:3000)
+## Stack
 
-## 📁 Project Structure
+- **Next.js 14** — app router, TypeScript throughout
+- **Framer Motion** — all card animations and interaction sequences
+- **Zustand** — session state with localStorage persistence
+- **Tailwind CSS** — layout and typography
+- **Vercel** — deployment and preview environments
 
-```
-card-pack-opener/
-├── app/
-│   ├── globals.css        # Custom fonts, animations, CSS vars
-│   ├── layout.tsx         # Root layout + metadata
-│   └── page.tsx           # Main orchestrator (phase state machine)
-├── components/
-│   ├── ParticleBackground.tsx  # Canvas particle system
-│   ├── PackSelection.tsx       # Pack grid with hover effects
-│   ├── PackInspect.tsx         # Selected pack + open button
-│   ├── Card.tsx                # Individual card with flip animation
-│   └── CardReveal.tsx          # Fan layout + reveal all logic
-├── data/
-│   └── cards.ts           # Pack definitions, card generation, rarity config
-├── types/
-│   └── index.ts           # TypeScript interfaces
-└── ...config files
-```
+## Status
 
-## 🎨 Customization
-
-- **Add packs**: Edit `data/cards.ts` → `PACKS` array
-- **Add card names**: Edit `CARD_NAMES` and `CARD_DESC` in `data/cards.ts`
-- **Adjust rarity odds**: Edit `getRarityForIndex()` in `data/cards.ts`
-- **Change card count per pack**: Set `cardCount` in each pack definition
-- **Swap fonts**: Edit the Google Fonts import in `globals.css`
+MVP complete. Actively exploring post-MVP directions including daily pack cadence,
+idea categories, and user-submitted ideas.
