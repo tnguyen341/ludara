@@ -520,7 +520,7 @@ function DesktopFan({
   const [playedIds, setPlayedIds] = useState<Set<string>>(new Set());
   const [anyDragging, setAnyDragging] = useState(false);
   const [dropZoneReady, setDropZoneReady] = useState(false);
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [isContainerHovered, setIsContainerHovered] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setFanned(true), 300);
@@ -611,7 +611,7 @@ function DesktopFan({
       </motion.div>
 
       {/* Fan */}
-      <div
+      <motion.div
         style={{
           position: "relative",
           width: "100%",
@@ -621,7 +621,11 @@ function DesktopFan({
           alignItems: "flex-end",
           justifyContent: "center",
           overflow: "visible",
+          padding: "48px 80px",
+          margin: "-48px -80px",
         }}
+        onHoverStart={() => setIsContainerHovered(true)}
+        onHoverEnd={() => setIsContainerHovered(false)}
       >
         {cards.map((card, i) => (
           <Card
@@ -631,14 +635,12 @@ function DesktopFan({
             total={cards.length}
             isFanned={fanned}
             isPlayed={playedIds.has(card.id)}
-            isHovered={hoveredIndex === i}
-            isAnyHovered={hoveredIndex !== null}
-            onHoverChange={(hovered) => setHoveredIndex(hovered ? i : null)}
+            isAnyHovered={isContainerHovered}
             onPlay={() => handlePlay(card.id)}
             onDragStateChange={handleDragStateChange}
           />
         ))}
-      </div>
+      </motion.div>
 
       {/* Hint */}
       <AnimatePresence>

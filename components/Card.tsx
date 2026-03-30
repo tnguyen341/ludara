@@ -17,9 +17,7 @@ interface CardProps {
   total: number;
   isFanned: boolean;
   isPlayed: boolean;
-  isHovered?: boolean;
   isAnyHovered?: boolean;
-  onHoverChange?: (hovered: boolean) => void;
   onPlay: () => void;
   onDragStateChange: (isDragging: boolean, aboveThreshold: boolean) => void;
 }
@@ -170,7 +168,7 @@ export function CardFace({
 
 // ── Desktop fan card ─────────────────────────────────────────────────────────
 export default function Card({
-  card, index, total, isFanned, isPlayed, isHovered = false, isAnyHovered = false, onHoverChange, onPlay, onDragStateChange,
+  card, index, total, isFanned, isPlayed, isAnyHovered = false, onPlay, onDragStateChange,
 }: CardProps) {
   const [flipped, setFlipped] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -221,14 +219,14 @@ export default function Card({
       fmAnimate(mx, flat.x, { duration: 0.28, ease });
       fmAnimate(my, flat.y, { duration: 0.28, ease });
       fmAnimate(mRotate, 0, { duration: 0.28, ease });
-      fmAnimate(mScale, isHovered ? 1.1 : 0.95, { duration: 0.28, ease });
+      fmAnimate(mScale, 1, { duration: 0.28, ease });
     } else {
       fmAnimate(mx, fan.x, { duration: 0.28, ease });
       fmAnimate(my, fan.y, { duration: 0.28, ease });
       fmAnimate(mRotate, fan.rotate, { duration: 0.28, ease });
       fmAnimate(mScale, 1, { duration: 0.28, ease });
     }
-  }, [isAnyHovered, isHovered]);
+  }, [isAnyHovered]);
 
   const handleDragStart = () => {
     setIsDragging(true);
@@ -270,18 +268,8 @@ export default function Card({
     }
   };
 
-  const handleHoverStart = () => {
-    if (!isFanned || isPlayed || isDragging) return;
-    onHoverChange?.(true);
-  };
-
-  const handleHoverEnd = () => {
-    onHoverChange?.(false);
-  };
-
   const zVariants = {
     default: { zIndex: isPlayed ? 0 : index + 2 },
-    hovered: { zIndex: 50 },
     dragging: { zIndex: 100 },
   };
 
@@ -289,7 +277,7 @@ export default function Card({
     <motion.div
       className="absolute select-none"
       variants={zVariants}
-      animate={isDragging ? "dragging" : isHovered ? "hovered" : "default"}
+      animate={isDragging ? "dragging" : "default"}
       style={{
         width: 160, height: 224,
         x: mx, y: my, scale: mScale, opacity: mOpacity,
@@ -302,8 +290,6 @@ export default function Card({
       onDragStart={handleDragStart}
       onDrag={handleDrag}
       onDragEnd={handleDragEnd}
-      onHoverStart={handleHoverStart}
-      onHoverEnd={handleHoverEnd}
     >
       {/* Rotation wrapper — isolated from draggable so drag tracks 1:1 */}
       <motion.div style={{ width: "100%", height: "100%", transformOrigin: "bottom center", rotate: mRotate }}>
