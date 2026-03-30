@@ -520,6 +520,7 @@ function DesktopFan({
   const [playedIds, setPlayedIds] = useState<Set<string>>(new Set());
   const [anyDragging, setAnyDragging] = useState(false);
   const [dropZoneReady, setDropZoneReady] = useState(false);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setFanned(true), 300);
@@ -630,6 +631,9 @@ function DesktopFan({
             total={cards.length}
             isFanned={fanned}
             isPlayed={playedIds.has(card.id)}
+            isHovered={hoveredIndex === i}
+            isAnyHovered={hoveredIndex !== null}
+            onHoverChange={(hovered) => setHoveredIndex(hovered ? i : null)}
             onPlay={() => handlePlay(card.id)}
             onDragStateChange={handleDragStateChange}
           />
