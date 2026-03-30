@@ -3,11 +3,13 @@ export type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
 export interface CardType {
   id: string;
   name: string;
-  rarity: Rarity;
   description: string;
-  power: number;
-  element: string;
-  symbol: string;
+  category: string;
+  // Arcana-specific fields — optional; idea cards leave these unset
+  rarity?: Rarity;
+  power?: number;
+  element?: string;
+  symbol?: string;
 }
 
 export interface Pack {
@@ -27,4 +29,5 @@ export type GamePhase =
   | "inspect"      // Looking at chosen pack before opening
   | "opening"      // Pack tear animation
   | "reveal"       // Cards fanning out
-  | "done";        // All revealed, can reset
+  | "done"         // All revealed, can reset
+  | "matchup";     // Idea matchup board

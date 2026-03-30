@@ -8,7 +8,7 @@ import {
   animate as fmAnimate,
 } from "framer-motion";
 import { CardType } from "@/types";
-import { RARITY_CONFIG } from "@/data/cards";
+import { RARITY_CONFIG } from "@/data/rarityConfig";
 import { useEffect, useState } from "react";
 
 interface CardProps {
@@ -17,8 +17,16 @@ interface CardProps {
   total: number;
   isFanned: boolean;
   isPlayed: boolean;
+  isAnyHovered?: boolean;
   onPlay: () => void;
   onDragStateChange: (isDragging: boolean, aboveThreshold: boolean) => void;
+}
+
+function getFlatTransform(index: number, total: number) {
+  const spacing = 180;
+  const mid = (total - 1) / 2;
+  const x = (index - mid) * spacing;
+  return { x, y: 0 };
 }
 
 function getFanTransform(index: number, total: number) {
@@ -50,7 +58,7 @@ export function CardFace({
   height?: number;
   flipDuration?: number;
 }) {
-  const cfg = RARITY_CONFIG[card.rarity];
+  const cfg = RARITY_CONFIG[card.rarity ?? "common"];
   return (
     <motion.div
       style={{
@@ -129,23 +137,28 @@ export function CardFace({
           <span style={{ fontFamily: "'Cinzel', serif", fontSize: "0.5rem", color: cfg.color, letterSpacing: "0.2em", textTransform: "uppercase", opacity: 0.9 }}>{cfg.label}</span>
           <span style={{ fontSize: "0.9rem", color: cfg.color, opacity: 0.8 }}>{card.symbol}</span>
         </div>
-        <div style={{ flex: "0 0 80px", margin: "8px", borderRadius: "6px", background: `radial-gradient(ellipse at 50% 40%, ${cfg.color}22 0%, rgba(0,0,0,0.4) 100%)`, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${cfg.border}44`, position: "relative", overflow: "hidden" }}>
-          {card.rarity === "legendary" && (
-            <motion.div
-              style={{ position: "absolute", inset: 0, background: `conic-gradient(from 0deg, transparent, ${cfg.color}33, transparent)` }}
-              animate={{ rotate: 360 }}
-              transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-            />
-          )}
-          <span style={{ fontSize: "2.2rem", lineHeight: 1, position: "relative", zIndex: 1 }}>{card.symbol}</span>
-        </div>
+        {(card.symbol !== undefined || card.rarity !== undefined) && (
+          <div style={{ flex: "0 0 32px", margin: "8px", borderRadius: "6px", background: `radial-gradient(ellipse at 50% 40%, ${cfg.color}22 0%, rgba(0,0,0,0.4) 100%)`, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${cfg.border}44`, position: "relative", overflow: "hidden" }}>
+            {card.rarity === "legendary" && (
+              <motion.div
+                style={{ position: "absolute", inset: 0, background: `conic-gradient(from 0deg, transparent, ${cfg.color}33, transparent)` }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+              />
+            )}
+            <span style={{ fontSize: "2.2rem", lineHeight: 1, position: "relative", zIndex: 1 }}>{card.symbol}</span>
+          </div>
+        )}
         <div style={{ padding: "0 10px 4px", fontFamily: "'Cinzel', serif", fontSize: "0.65rem", fontWeight: 700, color: cfg.color, letterSpacing: "0.05em", textAlign: "center", lineHeight: 1.3, textShadow: `0 0 10px ${cfg.glow}` }}>{card.name}</div>
         <div style={{ height: "1px", margin: "4px 12px", background: `linear-gradient(90deg, transparent, ${cfg.border}88, transparent)` }} />
         <div style={{ display: "flex", justifyContent: "space-between", padding: "0 10px 4px", fontFamily: "'Crimson Pro', serif", fontSize: "0.6rem", color: cfg.color, opacity: 0.8 }}>
           <span>{card.element}</span>
           <span>PWR {card.power}</span>
         </div>
-        <div style={{ flex: 1, padding: "0 10px 8px", fontFamily: "'Crimson Pro', serif", fontSize: "0.58rem", color: "#c8b88a", opacity: 0.75, lineHeight: 1.5, fontStyle: "italic", overflow: "hidden" }}>{card.description}</div>
+        <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 100%)", pointerEvents: "none" }} />
+          <div style={{ position: "relative", zIndex: 1, padding: "4px 10px 8px", fontFamily: "'Crimson Pro', serif", fontSize: "0.78rem", color: "#ecdcbc", lineHeight: 1.75, fontStyle: "italic", overflow: "hidden", height: "100%" }}>{card.description}</div>
+        </div>
         <div style={{ height: "4px", background: `linear-gradient(90deg, transparent, ${cfg.color}, transparent)` }} />
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 60%)", pointerEvents: "none" }} />
       </div>
@@ -155,7 +168,7 @@ export function CardFace({
 
 // ── Desktop fan card ─────────────────────────────────────────────────────────
 export default function Card({
-  card, index, total, isFanned, isPlayed, onPlay, onDragStateChange,
+  card, index, total, isFanned, isPlayed, isAnyHovered = false, onPlay, onDragStateChange,
 }: CardProps) {
   const [flipped, setFlipped] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -163,8 +176,9 @@ export default function Card({
   const [isBursting, setIsBursting] = useState(false);
   const [willChange, setWillChange] = useState<"auto" | "transform">("auto");
 
-  const cfg = RARITY_CONFIG[card.rarity];
+  const cfg = RARITY_CONFIG[card.rarity ?? "common"];
   const fan = getFanTransform(index, total);
+  const flat = getFlatTransform(index, total);
 
   const mx = useMotionValue(0);
   const my = useMotionValue(50);
@@ -197,6 +211,22 @@ export default function Card({
     const wc = setTimeout(() => setWillChange("auto"), (0.72 + delay) * 1000 + 100);
     return () => { controls.forEach(c => c.stop()); clearTimeout(wc); };
   }, [isFanned, fan.x, fan.y, fan.rotate]);
+
+  useEffect(() => {
+    if (!isFanned || isDragging) return;
+    const ease: [number, number, number, number] = [0.16, 1, 0.3, 1];
+    if (isAnyHovered) {
+      fmAnimate(mx, flat.x, { duration: 0.28, ease });
+      fmAnimate(my, flat.y, { duration: 0.28, ease });
+      fmAnimate(mRotate, 0, { duration: 0.28, ease });
+      fmAnimate(mScale, 1, { duration: 0.28, ease });
+    } else {
+      fmAnimate(mx, fan.x, { duration: 0.28, ease });
+      fmAnimate(my, fan.y, { duration: 0.28, ease });
+      fmAnimate(mRotate, fan.rotate, { duration: 0.28, ease });
+      fmAnimate(mScale, 1, { duration: 0.28, ease });
+    }
+  }, [isAnyHovered]);
 
   const handleDragStart = () => {
     setIsDragging(true);
@@ -238,25 +268,19 @@ export default function Card({
     }
   };
 
-  const handleHoverStart = () => {
-    if (!isFanned || isPlayed || isDragging) return;
-    fmAnimate(my, fan.y - 42, { duration: 0.18, ease: "easeOut" });
-    fmAnimate(mScale, 1.14, { duration: 0.18, ease: "easeOut" });
-  };
-
-  const handleHoverEnd = () => {
-    if (isDragging) return;
-    fmAnimate(my, fan.y, { duration: 0.22, ease: "easeOut" });
-    fmAnimate(mScale, 1, { duration: 0.22, ease: "easeOut" });
+  const zVariants = {
+    default: { zIndex: isPlayed ? 0 : index + 2 },
+    dragging: { zIndex: 100 },
   };
 
   return (
     <motion.div
       className="absolute select-none"
+      variants={zVariants}
+      animate={isDragging ? "dragging" : "default"}
       style={{
         width: 160, height: 224,
         x: mx, y: my, scale: mScale, opacity: mOpacity,
-        zIndex: isPlayed ? 0 : isDragging ? 100 : index + 2,
         cursor: isDragging ? "grabbing" : "grab",
         touchAction: "none", willChange,
       }}
@@ -266,8 +290,6 @@ export default function Card({
       onDragStart={handleDragStart}
       onDrag={handleDrag}
       onDragEnd={handleDragEnd}
-      onHoverStart={handleHoverStart}
-      onHoverEnd={handleHoverEnd}
     >
       {/* Rotation wrapper — isolated from draggable so drag tracks 1:1 */}
       <motion.div style={{ width: "100%", height: "100%", transformOrigin: "bottom center", rotate: mRotate }}>
