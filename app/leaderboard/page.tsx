@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useSessionStore } from "@/store/sessionStore";
@@ -18,24 +17,11 @@ const CATEGORY_COLOR: Record<string, string> = {
 
 export default function LeaderboardPage() {
   const router = useRouter();
-  const { hasPlayed, scores, resetSession } = useSessionStore();
+  const { scores } = useSessionStore();
 
-  // Guard: if the user hasn't played yet, send them back to the start
-  useEffect(() => {
-    if (!hasPlayed) {
-      router.replace("/");
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const topIdeas = IDEAS.filter((i) => scores[i.id] !== undefined)
-    .sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0))
-    .slice(0, 5);
-
-  const handleReset = () => {
-    resetSession();
-    router.push("/");
-  };
+  const ranked = IDEAS
+    .filter((idea) => (scores[idea.id] ?? 0) >= 1)
+    .sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0));
 
   return (
     <main
@@ -48,7 +34,6 @@ export default function LeaderboardPage() {
     >
       <ParticleBackground />
 
-      {/* Vignette */}
       <div
         style={{
           position: "fixed",
@@ -67,105 +52,152 @@ export default function LeaderboardPage() {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          justifyContent: "center",
           minHeight: "100vh",
-          padding: "40px 24px",
-          textAlign: "center",
+          padding: "48px 20px 80px",
+          maxWidth: 480,
+          margin: "0 auto",
         }}
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.45 }}
       >
-        <h2
+        {/* Header */}
+        <h1
           style={{
             fontFamily: "'Cinzel Decorative', cursive",
-            fontSize: "1.5rem",
+            fontSize: "1.4rem",
             fontWeight: 900,
             color: "#c9a84c",
-            textShadow: "0 0 30px rgba(201,168,76,0.6)",
-            marginBottom: 6,
+            textShadow: "0 0 28px rgba(201,168,76,0.55)",
+            marginBottom: 4,
+            textAlign: "center",
           }}
         >
           Leaderboard
-        </h2>
+        </h1>
         <p
           style={{
             fontFamily: "'Crimson Pro', serif",
-            fontSize: "0.85rem",
+            fontSize: "0.82rem",
             color: "#c8b88a",
-            opacity: 0.65,
-            marginBottom: 32,
+            opacity: 0.55,
+            marginBottom: 36,
+            textAlign: "center",
           }}
         >
-          Your committed idea is recorded.
+          Ideas ranked by votes across all sessions
         </p>
 
-        {topIdeas.length > 0 && (
-          <div style={{ width: "100%", maxWidth: 340, marginBottom: 36 }}>
+        {/* Empty state */}
+        {ranked.length === 0 && (
+          <motion.div
+            style={{ textAlign: "center", marginTop: 32 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
             <p
               style={{
                 fontFamily: "'Cinzel', serif",
-                fontSize: "0.45rem",
-                letterSpacing: "0.3em",
-                textTransform: "uppercase",
+                fontSize: "0.72rem",
                 color: "#c9a84c",
-                opacity: 0.5,
-                marginBottom: 12,
+                opacity: 0.45,
+                letterSpacing: "0.12em",
+                marginBottom: 8,
               }}
             >
-              Top Ideas
+              No votes yet
             </p>
-            {topIdeas.map((idea, i) => {
+            <p
+              style={{
+                fontFamily: "'Crimson Pro', serif",
+                fontSize: "0.78rem",
+                color: "#c8b88a",
+                opacity: 0.45,
+                marginBottom: 32,
+              }}
+            >
+              Open a pack and commit an idea to see it here.
+            </p>
+          </motion.div>
+        )}
+
+        {/* Ranked list */}
+        {ranked.length > 0 && (
+          <div style={{ width: "100%", marginBottom: 36 }}>
+            {ranked.map((idea, i) => {
               const color = CATEGORY_COLOR[idea.category] ?? "#c9a84c";
+              const voteCount = scores[idea.id] ?? 0;
               return (
                 <motion.div
                   key={idea.id}
-                  initial={{ opacity: 0, x: -12 }}
+                  initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.07 }}
+                  transition={{ delay: i * 0.06, duration: 0.3 }}
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 10,
-                    padding: "7px 14px",
-                    marginBottom: 5,
+                    gap: 12,
+                    padding: "10px 14px",
+                    marginBottom: 6,
                     borderRadius: 10,
-                    background: `${color}0d`,
-                    border: `1px solid ${color}2a`,
+                    background: `${color}0c`,
+                    border: `1px solid ${color}28`,
                   }}
                 >
+                  {/* Rank */}
                   <span
                     style={{
                       fontFamily: "'Cinzel', serif",
-                      fontSize: "0.6rem",
-                      color,
-                      opacity: 0.85,
-                      minWidth: 22,
-                      textAlign: "right",
+                      fontSize: "0.55rem",
+                      color: "#c9a84c",
+                      opacity: 0.45,
+                      minWidth: 20,
+                      textAlign: "center",
+                      flexShrink: 0,
                     }}
                   >
-                    {scores[idea.id]}×
+                    {i + 1}
                   </span>
+
+                  {/* Title */}
                   <span
                     style={{
                       fontFamily: "'Cinzel', serif",
-                      fontSize: "0.58rem",
+                      fontSize: "0.62rem",
                       color: "#f0e0c0",
                       flex: 1,
-                      textAlign: "left",
+                      lineHeight: 1.35,
                     }}
                   >
                     {idea.name}
                   </span>
+
+                  {/* Category */}
                   <span
                     style={{
                       fontFamily: "'Crimson Pro', serif",
                       fontSize: "0.52rem",
                       color,
-                      opacity: 0.65,
+                      opacity: 0.7,
+                      flexShrink: 0,
                     }}
                   >
                     {idea.category}
+                  </span>
+
+                  {/* Vote count */}
+                  <span
+                    style={{
+                      fontFamily: "'Cinzel', serif",
+                      fontSize: "0.6rem",
+                      color,
+                      minWidth: 28,
+                      textAlign: "right",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {voteCount}
                   </span>
                 </motion.div>
               );
@@ -173,6 +205,7 @@ export default function LeaderboardPage() {
           </div>
         )}
 
+        {/* Back to home */}
         <motion.button
           style={{
             padding: "10px 32px",
@@ -181,16 +214,18 @@ export default function LeaderboardPage() {
             border: "2px solid #c9a84c55",
             color: "#c9a84c",
             fontFamily: "'Cinzel', serif",
-            fontSize: "0.62rem",
+            fontSize: "0.6rem",
             letterSpacing: "0.2em",
             textTransform: "uppercase",
             cursor: "pointer",
           }}
           whileHover={{ borderColor: "#c9a84c", opacity: 1 }}
           whileTap={{ scale: 0.96 }}
-          onClick={handleReset}
+          initial={{ opacity: 0.7 }}
+          animate={{ opacity: 0.7 }}
+          onClick={() => router.push("/")}
         >
-          Start Over
+          Back to home
         </motion.button>
       </motion.div>
 
