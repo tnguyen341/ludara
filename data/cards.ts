@@ -4,8 +4,6 @@ export const LUDARA_PACK: Pack = {
   id: "ludara",
   name: "Ludara",
   description: "A hand of ideas worth debating.",
-  cardCount: 3,
-  theme: "ideas",
   accentColor: "#c9a84c",
   glowColor: "rgba(201,168,76,0.5)",
   symbol: "✦",
