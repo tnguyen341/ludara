@@ -151,10 +151,6 @@ export function CardFace({
         )}
         <div style={{ padding: "0 10px 4px", fontFamily: "'Cinzel', serif", fontSize: "0.65rem", fontWeight: 700, color: cfg.color, letterSpacing: "0.05em", textAlign: "center", lineHeight: 1.3, textShadow: `0 0 10px ${cfg.glow}` }}>{card.name}</div>
         <div style={{ height: "1px", margin: "4px 12px", background: `linear-gradient(90deg, transparent, ${cfg.border}88, transparent)` }} />
-        <div style={{ display: "flex", justifyContent: "space-between", padding: "0 10px 4px", fontFamily: "'Crimson Pro', serif", fontSize: "0.6rem", color: cfg.color, opacity: 0.8 }}>
-          <span>{card.element}</span>
-          <span>PWR {card.power}</span>
-        </div>
         <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 100%)", pointerEvents: "none" }} />
           <div style={{ position: "relative", zIndex: 1, padding: "4px 10px 8px", fontFamily: "'Crimson Pro', serif", fontSize: "0.78rem", color: "#ecdcbc", lineHeight: 1.75, fontStyle: "italic", overflow: "hidden", height: "100%" }}>{card.description}</div>
