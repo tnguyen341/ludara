@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useAnimation } from "framer-motion";
+import Image from "next/image";
 import { LUDARA_PACK } from "@/data/cards";
 import { useSessionStore } from "@/store/sessionStore";
 import ParticleBackground from "@/components/ParticleBackground";
@@ -14,8 +15,76 @@ export default function Home() {
   const router = useRouter();
   const { currentHand, initSession, commitCard, resetSession } = useSessionStore();
   const [stage, setStage] = useState<Stage>("pack");
+  const [isOpening, setIsOpening] = useState(false);
 
-  const handleOpenPack = () => {
+  const glowControls = useAnimation();
+  const packControls = useAnimation();
+  const promptControls = useAnimation();
+
+  // Restart idle state whenever pack stage is (re)entered
+  useEffect(() => {
+    if (stage !== "pack") return;
+
+    setIsOpening(false);
+    packControls.set({ scale: 1, x: 0, opacity: 1, filter: "brightness(1)" });
+    promptControls.set({ opacity: 0 });
+
+    void glowControls.start({
+      opacity: [0.5, 1, 0.5],
+      scale: [1, 1.15, 1],
+      transition: { duration: 2.5, repeat: Infinity, ease: "easeInOut" },
+    });
+
+    void promptControls.start({
+      opacity: 1,
+      transition: { delay: 1.5, duration: 0.6 },
+    });
+  }, [stage, glowControls, packControls, promptControls]);
+
+  const handleOpenPack = async () => {
+    if (isOpening) return;
+    setIsOpening(true);
+    glowControls.stop();
+
+    // Beat 1 (0–0.3s): brighten + scale up; prompt fades out
+    await Promise.all([
+      packControls.start({
+        scale: 1.08,
+        filter: "brightness(1.5)",
+        transition: { duration: 0.3, ease: "easeOut" },
+      }),
+      glowControls.start({
+        opacity: 1,
+        scale: 1.5,
+        transition: { duration: 0.3, ease: "easeOut" },
+      }),
+      promptControls.start({
+        opacity: 0,
+        transition: { duration: 0.2 },
+      }),
+    ]);
+
+    // Beat 2 (0.3–0.6s): horizontal shudder
+    await packControls.start({
+      x: [0, -10, 12, -8, 6, -3, 0],
+      transition: { duration: 0.3, times: [0, 0.15, 0.35, 0.55, 0.7, 0.85, 1] },
+    });
+
+    // Beat 3 (0.6–1.0s): fade out + scale down
+    await Promise.all([
+      packControls.start({
+        opacity: 0,
+        scale: 0.85,
+        filter: "brightness(2.5)",
+        transition: { duration: 0.4, ease: "easeIn" },
+      }),
+      glowControls.start({
+        opacity: 0,
+        scale: 2,
+        transition: { duration: 0.4, ease: "easeIn" },
+      }),
+    ]);
+
     initSession();
     setStage("reveal");
   };
@@ -65,68 +134,89 @@ export default function Home() {
               alignItems: "center",
               justifyContent: "center",
               minHeight: "100vh",
+              gap: 28,
             }}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.5 }}
           >
-            {/* Pack visual */}
-            <motion.button
-              onClick={handleOpenPack}
+            {/* Pack + glow */}
+            <div
               style={{
-                background: LUDARA_PACK.gradient,
-                border: `2px solid ${LUDARA_PACK.accentColor}55`,
-                borderRadius: 16,
-                width: 200,
-                height: 280,
+                position: "relative",
                 display: "flex",
-                flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: 12,
-                cursor: "pointer",
-                boxShadow: `0 24px 64px rgba(0,0,0,0.8), 0 0 32px ${LUDARA_PACK.glowColor}`,
               }}
-              whileHover={{
-                scale: 1.04,
-                boxShadow: `0 32px 80px rgba(0,0,0,0.85), 0 0 56px ${LUDARA_PACK.glowColor}`,
-              }}
-              whileTap={{ scale: 0.97 }}
-              animate={{
-                boxShadow: [
-                  `0 24px 64px rgba(0,0,0,0.8), 0 0 24px ${LUDARA_PACK.glowColor}`,
-                  `0 24px 64px rgba(0,0,0,0.8), 0 0 48px ${LUDARA_PACK.glowColor}`,
-                  `0 24px 64px rgba(0,0,0,0.8), 0 0 24px ${LUDARA_PACK.glowColor}`,
-                ],
-              }}
-              transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
             >
-              <span style={{ fontSize: "2.5rem" }}>{LUDARA_PACK.symbol}</span>
-              <span
+              {/* Radial glow behind pack */}
+              <motion.div
+                animate={glowControls}
                 style={{
-                  fontFamily: "'Cinzel Decorative', cursive",
-                  fontSize: "0.9rem",
-                  fontWeight: 900,
-                  color: LUDARA_PACK.accentColor,
-                  letterSpacing: "0.08em",
+                  position: "absolute",
+                  width: 320,
+                  height: 400,
+                  borderRadius: "50%",
+                  background: `radial-gradient(ellipse at center, ${LUDARA_PACK.glowColor} 0%, transparent 70%)`,
+                  filter: "blur(28px)",
+                  pointerEvents: "none",
+                  opacity: 0.5,
+                }}
+              />
+
+              {/* Pack image */}
+              <motion.div
+                animate={packControls}
+                onClick={() => { void handleOpenPack(); }}
+                style={{
+                  position: "relative",
+                  width: 200,
+                  height: 280,
+                  borderRadius: 12,
+                  overflow: "hidden",
+                  cursor: isOpening ? "default" : "pointer",
+                  rotateX: 8,
+                  rotateY: -12,
+                  transformPerspective: 800,
+                  boxShadow:
+                    "0 24px 64px rgba(0,0,0,0.85), 0 8px 24px rgba(0,0,0,0.6)",
+                  willChange: "transform",
                 }}
               >
-                {LUDARA_PACK.name}
-              </span>
-              <span
-                style={{
-                  fontFamily: "'Crimson Pro', serif",
-                  fontSize: "0.6rem",
-                  color: LUDARA_PACK.accentColor,
-                  opacity: 0.55,
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
-                }}
-              >
-                Tap to open
-              </span>
-            </motion.button>
+                <Image
+                  src="/images/pack.jpeg"
+                  alt="Ludara pack"
+                  width={200}
+                  height={280}
+                  priority
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
+                />
+              </motion.div>
+            </div>
+
+            {/* "Tap to open" prompt */}
+            <motion.p
+              animate={promptControls}
+              style={{
+                fontFamily: "'Crimson Pro', serif",
+                fontSize: "0.7rem",
+                letterSpacing: "0.28em",
+                textTransform: "uppercase",
+                color: LUDARA_PACK.accentColor,
+                opacity: 0,
+                pointerEvents: "none",
+                userSelect: "none",
+                margin: 0,
+              }}
+            >
+              Tap to open
+            </motion.p>
           </motion.div>
         )}
 
@@ -156,6 +246,7 @@ export default function Home() {
                 opacity: 0.6,
                 zIndex: 10,
                 pointerEvents: "none",
+                margin: 0,
               }}
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 0.6, y: 0 }}
